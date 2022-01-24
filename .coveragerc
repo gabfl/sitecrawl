@@ -1,0 +1,13 @@
+[run]
+source=sitecrawl
+
+[report]
+omit =
+  setup.py
+  src/__main__.py
+  src/unittest/*
+  venv/*
+  example.py
+exclude_lines =
+  if __name__ == "__main__":
+  main()
