@@ -24,7 +24,6 @@ no_pound = False
 no_get = False
 no_validate_ct = False
 verbose = False
-max_crawl = 0
 scanned_urls = []
 internal_urls = []
 skipped_urls = []
@@ -225,10 +224,6 @@ def find_urls(soup):
                         continue
 
                     internal_urls = internal_urls + [url]
-
-                    # Limit crawl
-                    if max_crawl > 0 and len(internal_urls) >= internal_urls:
-                        return
             else:  # Different website
                 if url not in external_urls:
                     external_urls = external_urls + [url]
@@ -237,7 +232,7 @@ def find_urls(soup):
 
 
 def main():
-    global base_url, no_pound, no_get, no_validate_ct, verbose, max_
+    global base_url, no_pound, no_get, no_validate_ct, verbose
 
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -251,8 +246,6 @@ def main():
                         help="Discard GET parameters")
     parser.add_argument("-c", "--no_validate_ct", action='store_true',
                         help="Accept non text/html content types")
-    parser.add_argument("-m", "--max", type=int,
-                        help="Max number of internal URLs to return (allows to limit crawling of a large website)", default=0)
     parser.add_argument("-v", "--verbose", action='store_true',
                         help="Verbose mode")
     args = parser.parse_args()
@@ -263,7 +256,6 @@ def main():
     no_get = args.no_get
     no_validate_ct = args.no_validate_ct
     verbose = args.verbose
-    max_crawl = args.max
 
     deep_crawl(args.depth)
 
