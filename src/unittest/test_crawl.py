@@ -9,6 +9,7 @@ from .. import crawl
 class Test(unittest.TestCase):
 
     def setUp(self):
+        crawl.max_crawl = 5
         crawl.verbose = True
 
     def test_is_same_website(self):
