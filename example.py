@@ -5,9 +5,10 @@ except ModuleNotFoundError:
     import sys
     sys.exit()
 
-crawl.base_url = 'https://www.github.com'
+crawl.base_url = 'https://www.yahoo.com'
 crawl.no_pound = True  # Trim URLs after #
 crawl.no_get = True  # Trim URLs after ?
+crawl.max_crawl = 30  # Maximum numbers of internal URLs to return
 
 crawl.deep_crawl(depth=2)
 

@@ -32,29 +32,24 @@ pip3 install .
 ### CLI
 
 ```bash
-sitecrawl --url http://www.gab.lc --depth 3
-
-# Add --verbose for verbose mode
+sitecrawl --url https://www.yahoo.com/ --depth 2 --max 4 --verbose
 ```
 
 ->
 
 ```
 * Found 4 internal URLs
-  http://www.gab.lc
-  http://www.gab.lc/articles
-  http://www.gab.lc/contact
-  http://www.gab.lc/about
+  https://www.yahoo.com
+  https://www.yahoo.com/entertainment
+  https://www.yahoo.com/lifestyle
+  https://www.yahoo.com/plus
 
-* Found 8 external URLs
-  https://gpgtools.org/
-  http://en.wikipedia.org/wiki/GNU_General_Public_License
-  http://en.wikipedia.org/wiki/Pretty_Good_Privacy
-  http://en.wikipedia.org/wiki/GNU_Privacy_Guard
-  https://www.gpgtools.org
-  https://www.google.com/#hl=en&q=install+gpg+windows
-  http://www.gnupg.org/gph/en/manual/x135.html
-  http://keys.gnupg.net
+* Found 5 external URLs
+  https://mail.yahoo.com/
+  https://news.yahoo.com/
+  https://finance.yahoo.com/
+  https://sports.yahoo.com/
+  https://shopping.yahoo.com/
 
 * Skipped 0 URLs
 ```
@@ -66,7 +61,7 @@ Basic example:
 ```py
 from sitecrawl import crawl
 
-crawl.base_url = 'https://www.github.com'
+crawl.base_url = 'https://www.yahoo.com'
 crawl.deep_crawl(depth=2)
 
 print('Internal URLs:', crawl.get_internal_urls())
