@@ -1,12 +1,15 @@
 from setuptools import setup
 
-import pypandoc
+try:
+    long_description = pypandoc.convert_file('README.md', 'rst')
+except(IOError, ImportError):
+    long_description = open('README.md').read()
 
 setup(
     name='sitecrawl',
     version='1.0',
     description='Simple Python3 module to crawl a website and extract URLs',
-    long_description=pypandoc.convert_file('README.md', 'rst'),
+    long_description=long_description,
     author='Gabriel Bordeaux',
     author_email='pypi@gab.lc',
     url='https://github.com/gabfl/sitecrawl',
