@@ -68,8 +68,10 @@ def discard_after_character(url, character='#'):
 def deep_crawl(depth=2):
     """ Scan a list of URLs """
 
+    global internal_urls
+
     # Add the first URL to the list of scanned URLs
-    internal_urls.append(base_url)
+    internal_urls = [base_url]
 
     # Loop repeatedly through URLs to achieve desired depth
     for x in range(depth):
@@ -177,6 +179,8 @@ def get_skipped_urls():
 def find_urls(soup):
     """ Finds all the URLs in a page """
 
+    global internal_urls, skipped_urls, external_urls
+
     for link in soup.find_all('a'):
         url = link.get('href')
         if url:
@@ -206,7 +210,7 @@ def find_urls(soup):
 
                     # Validate status code
                     if not is_valid_status_code(r):
-                        skipped_urls.append(url)
+                        skipped_urls = skipped_urls + [url]
                         if verbose:
                             print('! Skipping: status code',
                                   str(r.status_code))
@@ -214,15 +218,15 @@ def find_urls(soup):
 
                     # Validate content type
                     if not is_valid_content_type(r):
-                        skipped_urls.append(url)
+                        skipped_urls = skipped_urls + [url]
                         if verbose:
                             print('! Skipping: Invalid content type')
                         continue
 
-                    internal_urls.append(url)
+                    internal_urls = internal_urls + [url]
             else:  # Different website
                 if url not in external_urls:
-                    external_urls.append(url)
+                    external_urls = external_urls + [url]
                     if verbose:
                         print('* Found external URL:', url)
 
