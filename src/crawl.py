@@ -7,7 +7,17 @@ valid_content_types = [
     'text/html',
 ]
 crawling_headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"}
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+    "accept-language": "en-US,en;q=0.8",
+    "Accept-Encoding": "br, gzip, deflate",
+    "Accept": "test/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Cache-Control": "max-age=0",
+    "DNT": "1",
+    "Pragma": "no-cache",
+    "Referer": "http://www.google.com",
+}
 crawling_timeout = 3
 base_url = None
 no_pound = False
@@ -170,6 +180,9 @@ def find_urls(soup):
     for link in soup.find_all('a'):
         url = link.get('href')
         if url:
+            # Remove spaces
+            url = url.strip()
+
             if is_same_website(base_url, url):
                 url = relative_to_absolute(base_url, url)
                 url = truncate_last_slash(url)
