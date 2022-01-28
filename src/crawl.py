@@ -29,6 +29,7 @@ scanned_urls = []
 internal_urls = []
 skipped_urls = []
 external_urls = []
+requests_cache = {}
 
 
 def is_same_website(base, url):
@@ -51,15 +52,6 @@ def relative_to_absolute(base, url):
         return base + '/' + url
 
 
-def truncate_last_slash(url):
-    """ Truncates the last slash of a URL """
-
-    if url.endswith('/'):
-        return url[:-1]
-    else:
-        return url
-
-
 def discard_after_character(url, character='#'):
     """ Discard a URL after a character """
 
@@ -71,8 +63,13 @@ def deep_crawl(depth=2):
 
     global internal_urls
 
+    # Load initial URL
+    request_res = load_url(base_url)
+    if not request_res:
+        return False
+
     # Add the first URL to the list of scanned URLs
-    internal_urls = [base_url]
+    internal_urls = [request_res.url]
 
     # Loop repeatedly through URLs to achieve desired depth
     for x in range(depth):
@@ -97,25 +94,64 @@ def scan_url(url):
     # Add to list of scanned URLs
     scanned_urls.append(url)
 
-    soup = load_page(url)
-    if not soup:
+    # Load page
+    request_res = load_url_from_cache(url) or load_url(url)
+    if not request_res:
         return False
 
+    # Parse HTML
+    soup = parse_html(request_res)
+
+    # Find URLs within the page
     find_urls(soup)
 
     return True
 
 
-def load_headers(url):
-    """ Load a page headers only """
+def load_url(url, validate_result=True):
+    """ Loads a page and returns the request response """
 
     try:
-        return requests.head(url, headers=crawling_headers, timeout=crawling_timeout)
+        r = requests.get(
+            url,
+            allow_redirects=True,
+            headers=crawling_headers,
+            timeout=crawling_timeout
+        )
     except requests.exceptions.ReadTimeout as e:
         if verbose:
             print('! Error: ' + str(e))
-
         return False
+
+    if validate_result:
+        # Discard non 2xx/3xx responses
+        if not is_valid_status_code(r):
+            if verbose:
+                print('! Error: status code ' + str(r.status_code))
+            return False
+
+        # Validate content type
+        if not is_valid_content_type(r):
+            if verbose:
+                print('! Error: Invalid content type')
+            return False
+
+    # Add to cache
+    requests_cache[url] = r  # Cache requested URL
+    if url != r.url:
+        requests_cache[r.url] = r  # Cache actual URL
+
+    return r
+
+
+def load_url_from_cache(url):
+    """ Returns the request response from the cache """
+
+    if url in requests_cache:
+        # print('* Cached: ' + url)
+        return requests_cache[url]
+
+    return None
 
 
 def is_valid_status_code(request):
@@ -137,30 +173,11 @@ def is_valid_content_type(request):
     return False
 
 
-def load_page(url):
-    """ Loads a page and returns its content """
+def parse_html(request_res):
+    """ Parses the HTML of a page """
 
-    try:
-        r = requests.get(url, headers=crawling_headers,
-                         timeout=crawling_timeout)
-    except requests.exceptions.ReadTimeout as e:
-        if verbose:
-            print('! Error: ' + str(e))
-        return False
-
-    # Discard non 2xx/3xx responses
-    if not is_valid_status_code(r):
-        if verbose:
-            print('! Error: status code ' + str(r.status_code))
-        return False
-
-    # Validate content type
-    if not is_valid_content_type(r):
-        if verbose:
-            print('! Error: Invalid content type')
-        return False
-
-    return BeautifulSoup(r.text, 'html.parser')
+    soup = BeautifulSoup(request_res.text, 'html.parser')
+    return soup
 
 
 def get_internal_urls():
@@ -194,7 +211,6 @@ def find_urls(soup):
 
             if is_same_website(base_url, url):
                 url = relative_to_absolute(base_url, url)
-                url = truncate_last_slash(url)
 
                 if no_pound:
                     url = discard_after_character(url)
@@ -202,20 +218,23 @@ def find_urls(soup):
                 if no_get:
                     url = discard_after_character(url, '?')
 
-                if url not in internal_urls and url not in skipped_urls:
+                # Load page
+                r = load_url_from_cache(url) or load_url(url, False)
+                if not r:
+                    if verbose:
+                        print('! Skipping: Invalid page response')
+                    continue
+
+                # Set page URL (which may have been modified by a redirect)
+                page_url = r.url
+
+                if page_url not in internal_urls and page_url not in skipped_urls:
                     if verbose:
                         print('* Found internal URL:', url)
 
-                    # Load URL headers only
-                    r = load_headers(url)
-                    if not r:
-                        if verbose:
-                            print('! Skipping: Invalid page response')
-                        continue
-
                     # Validate status code
                     if not is_valid_status_code(r):
-                        skipped_urls = skipped_urls + [url]
+                        skipped_urls = skipped_urls + [page_url]
                         if verbose:
                             print('! Skipping: status code',
                                   str(r.status_code))
@@ -223,12 +242,12 @@ def find_urls(soup):
 
                     # Validate content type
                     if not is_valid_content_type(r):
-                        skipped_urls = skipped_urls + [url]
+                        skipped_urls = skipped_urls + [page_url]
                         if verbose:
                             print('! Skipping: Invalid content type')
                         continue
 
-                    internal_urls = internal_urls + [url]
+                    internal_urls = internal_urls + [page_url]
 
                     # Limit crawl
                     if max_crawl > 0 and len(internal_urls) >= max_crawl:
@@ -262,7 +281,7 @@ def main():
     args = parser.parse_args()
 
     # Set variables
-    base_url = truncate_last_slash(args.url)
+    base_url = args.url
     no_pound = args.no_pound
     no_get = args.no_get
     no_validate_ct = args.no_validate_ct
