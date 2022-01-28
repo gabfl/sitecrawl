@@ -53,34 +53,64 @@ class Test(unittest.TestCase):
         assert isinstance(crawl.get_external_urls(), list)
         assert isinstance(crawl.get_skipped_urls(), list)
 
+        # Test invalid URL
+        crawl.base_url = 'https://www.gab.lc/some_404_page'
+        assert crawl.deep_crawl(1) is False
+
     def test_scan_url(self):
         crawl.base_url = 'https://github.com'
         res = crawl.scan_url('https://github.com')
-
         assert res is True
 
         # Test invalid URL
         res = crawl.scan_url('https://www.gab.lc/some_404_page')
         assert res is False
 
-    def test_load_headers(self):
-        assert isinstance(crawl.load_headers(
-            'https://github.com'), requests.models.Response)
+    def test_load_url(self):
+        res = crawl.load_url('https://github.com/')
+        assert isinstance(res, requests.models.Response)
+
+        # Test cache
+        assert res.url in crawl.requests_cache
+        assert isinstance(
+            crawl.requests_cache[res.url], requests.models.Response)
+
+        # Test 404 page
+        res = crawl.load_url(
+            'http://www.gab.lc/some_404_page')
+        assert res is False
+
+        # Test page with invalid content type
+        res = crawl.load_url(
+            'https://www.gab.lc/static/misc/gpg.txt')
+        assert res is False
+
+    def test_load_url_from_cache(self):
+
+        # Test unknown URL
+        res = crawl.load_url_from_cache('http://www.somenewurl.com')
+        assert res is None
+
+        # Test known URL
+        crawl.load_url('https://github.com')
+        res = crawl.load_url_from_cache('https://github.com')
+        assert isinstance(res, requests.models.Response)
 
     def test_is_valid_status_code(self):
-        r = crawl.load_headers('https://www.gab.lc')
+        r = crawl.load_url('https://www.gab.lc', validate_result=False)
         assert crawl.is_valid_status_code(r) is True
 
-        r = crawl.load_headers('https://www.gab.lc/some_404_page')
+        r = crawl.load_url('https://www.gab.lc/some_404_page',
+                           validate_result=False)
         assert crawl.is_valid_status_code(r) is False
 
     def test_is_valid_content_type(self):
-        r = crawl.load_headers('https://www.gab.lc')
+        r = crawl.load_url('https://www.gab.lc', validate_result=False)
         assert crawl.is_valid_content_type(r) is True
 
         # Invalid headers
-        r = crawl.load_headers(
-            'https://www.gab.lc/static/misc/gpg.txt')
+        r = crawl.load_url(
+            'https://www.gab.lc/static/misc/gpg.txt', validate_result=False)
         assert crawl.is_valid_content_type(r) is False
 
         # Test invalid content type with override flag
@@ -88,28 +118,22 @@ class Test(unittest.TestCase):
         assert crawl.is_valid_content_type(r) is True
         crawl.no_validate_ct = False  # Restore default
 
-    def test_load_page(self):
-        assert isinstance(crawl.load_page(
-            'https://github.com/'), BeautifulSoup)
-
-        # Test 404 page
-        assert crawl.load_page('http://www.gab.lc/some_404_page') is False
-
-        # Test page with invalid content type
-        assert crawl.load_page(
-            'https://www.gab.lc/static/misc/gpg.txt') is False
+    def parse_html(self):
+        request_res = crawl.load_url('https://github.com/')
+        soup = crawl.parse_html(request_res)
+        assert isinstance(soup, BeautifulSoup)
 
     def test_find_urls(self):
         crawl.no_pound = True
         crawl.no_get = True
 
         crawl.base_url = 'https://www.gab.lc'
-        soup = crawl.load_page('https://www.gab.lc')
-        res = crawl.find_urls(soup)
-        assert res is None
+        request_res = crawl.load_url('https://www.gab.lc')
+        soup = crawl.parse_html(request_res)
+        assert crawl.find_urls(soup) is None
 
         # Test with invalid status code
         crawl.base_url = 'https://httpstat.us'
-        soup = crawl.load_page('https://httpstat.us')
-        res = crawl.find_urls(soup)
-        assert res is None
+        request_res = crawl.load_url('https://httpstat.us')
+        soup = crawl.parse_html(request_res)
+        assert crawl.find_urls(soup) is None

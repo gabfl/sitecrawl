@@ -8,7 +8,7 @@ except(IOError, ImportError):
 
 setup(
     name='sitecrawl',
-    version='1.0.4',
+    version='1.0.5',
     description='Simple Python3 module to crawl a website and extract URLs',
     long_description=long_description,
     author='Gabriel Bordeaux',
