@@ -52,15 +52,6 @@ def relative_to_absolute(base, url):
         return base + '/' + url
 
 
-def truncate_last_slash(url):
-    """ Truncates the last slash of a URL """
-
-    if url.endswith('/'):
-        return url[:-1]
-    else:
-        return url
-
-
 def discard_after_character(url, character='#'):
     """ Discard a URL after a character """
 
@@ -87,7 +78,6 @@ def deep_crawl(depth=2):
         for url in internal_urls:
             # print(url)
             if url not in scanned_urls:
-                # `page_url` might differ from `url` if the URL was redirected
                 scan_url(url)
 
                 # Limit crawl
@@ -119,7 +109,7 @@ def scan_url(url):
 
 
 def load_url(url, validate_result=True):
-    """ Loads a page and returns its content """
+    """ Loads a page and returns the request response """
 
     try:
         r = requests.get(
@@ -228,7 +218,7 @@ def find_urls(soup):
                 if no_get:
                     url = discard_after_character(url, '?')
 
-                # Load URL headers only
+                # Load page
                 r = load_url_from_cache(url) or load_url(url, False)
                 if not r:
                     if verbose:
@@ -291,7 +281,7 @@ def main():
     args = parser.parse_args()
 
     # Set variables
-    base_url = truncate_last_slash(args.url)
+    base_url = args.url
     no_pound = args.no_pound
     no_get = args.no_get
     no_validate_ct = args.no_validate_ct

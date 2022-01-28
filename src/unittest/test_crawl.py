@@ -30,12 +30,6 @@ class Test(unittest.TestCase):
         assert crawl.relative_to_absolute(
             'http://www.gab.lc', 'something') == 'http://www.gab.lc/something'
 
-    def test_truncate_last_slash(self):
-        assert crawl.truncate_last_slash(
-            'http://www.gab.lc/') == 'http://www.gab.lc'
-        assert crawl.truncate_last_slash(
-            'http://www.gab.lc') == 'http://www.gab.lc'
-
     def test_discard_after_character(self):
         assert crawl.discard_after_character(
             'http://www.gab.lc/') == 'http://www.gab.lc/'
@@ -67,10 +61,16 @@ class Test(unittest.TestCase):
         assert res is False
 
     def test_load_url(self):
-        res = crawl.load_url('https://github.com/')
+        url = 'https://github.com/'
+        res = crawl.load_url(url)
         assert isinstance(res, requests.models.Response)
 
-        # Test cache
+        # Test cache (requested URL)
+        assert url in crawl.requests_cache
+        assert isinstance(
+            crawl.requests_cache[url], requests.models.Response)
+
+        # Test cache (actual URL)
         assert res.url in crawl.requests_cache
         assert isinstance(
             crawl.requests_cache[res.url], requests.models.Response)
@@ -92,8 +92,9 @@ class Test(unittest.TestCase):
         assert res is None
 
         # Test known URL
-        crawl.load_url('https://github.com')
-        res = crawl.load_url_from_cache('https://github.com')
+        url = 'https://github.com'
+        crawl.load_url(url)
+        res = crawl.load_url_from_cache(url)
         assert isinstance(res, requests.models.Response)
 
     def test_is_valid_status_code(self):
