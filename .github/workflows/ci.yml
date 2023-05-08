@@ -23,10 +23,14 @@ jobs:
           architecture: x64
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+      - name: Install deb dependencies
+        run: |
+          sudo apt update
+          sudo apt install pandoc
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install pycodestyle coverage pytest
+          pip install pycodestyle coverage pytest pypandoc
           pip install .
       - name: Run pycodestyle
         run: |
